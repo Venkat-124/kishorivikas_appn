@@ -1,0 +1,486 @@
+import React, { useState, useEffect } from 'react';
+import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import { Form, Formik } from 'formik';
+import TextField from '@mui/material/TextField';
+import axios from 'axios';
+import AppInfoView from '@crema/core/AppInfoView';
+import Box from '@mui/material/Box';
+import { Fonts } from 'shared/constants/AppEnums';
+import Typography from '@mui/material/Typography';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
+import { useRouter } from 'next/router';
+import toast,{Toaster} from "react-hot-toast";
+
+
+
+
+const label = { inputProps: { 'aria-label': 'Checkbox demo' } };
+
+const Page2 = () => {
+
+   
+
+
+
+    let center_id = 0;
+    const router = useRouter()
+    let { id } = router.query;
+    console.log("Center_id", router.query);
+    if (id !== undefined) {
+
+        center_id = id;
+    }
+
+    const [formValues, setFormValues] = useState({
+        project_id: "", center_name: "",  started_on: "",
+        about_center: "", bhag_id: "",
+    
+    });
+   
+ 
+  
+    const [totalarray, setTotalArray] = useState([]);
+    const [classValues, setClassValues] = useState([]); 
+   /*  const [class_name, setClass_name] = useState([]);
+    const handleChange1 = (event) => {
+             setClass_name(event.target.class_name);
+              console.log("ClassName",class_name);
+        }; */
+
+         
+
+        function onChangeMenu(e, id, count) {
+            var array = totalarray;
+            var filteredArray = totalarray.filter((item) => item.class_id == id);
+            if (filteredArray.length == 0) {
+              var data = {
+                class_id: id,
+                attendance: e.target.value,
+                strength: count,
+              };
+              array.push(data);
+            } else {
+              array.forEach(function (item) {
+                if (id === item.class_id) {
+                  item.attendance = e.target.value;
+                }
+              });
+            }
+            setTotalArray(array);
+            console.log("Total data",totalarray);
+          }
+
+    // merge tow useeffects to single
+    if (center_id !== 0) {
+        useEffect(() => {
+            axios.get(`http://192.168.1.78:8083/editcenter/${center_id}`)
+                .then((posRes) => {
+                    console.log(posRes.data);
+                    console.log("Success Editing Of Centers");
+                    setFormValues(posRes.data.data[0][0]);
+                    console.log("Center Editing Values",formValues);
+                })
+        }, [2000]);
+    }
+
+    useEffect(() => {
+        axios.get('http://192.168.1.78:8083/getclass')
+          .then((response) => {
+            console.log(response);
+            setClassValues(response.data.data[0]);
+            console.log("classValues",classValues);
+            // console.log(class_id,"class_id");
+         }).catch((errorRes) => {
+            console.log(errorRes);
+          })
+      }, []);
+      
+    
+/* 
+    useEffect(() => {
+        axios.get(`http://192.168.1.78:8083/editclass/${class_id}`)
+            .then((posRes) => {
+                console.log(posRes.data);
+                // console.log("Success Editing Of Classes");
+                setClassValues(posRes.data.data[0]);
+                console.log(classValues);
+            })
+    }, [2000]); */
+
+
+    const handleChange = (e) => {
+
+        const { name, value } = e.target;
+        setFormValues({ ...formValues, [name]: value });
+    }
+    function onChangeMenu(e, id, count) {
+        var array = totalarray;
+        var filteredArray = totalarray.filter((item) => item.class_id == id);
+        if (filteredArray.length == 0) {
+          var data = {
+            class_id: id,
+            strength: e.target.value,
+           actual_count: count,
+          };
+          array.push(data);
+        } else {
+          array.forEach(function (item) {
+            if (id === item.class_id) {
+              item.strength = e.target.value;
+            }
+          });
+        }
+        setTotalArray(array);
+        console.log("Total data",totalarray);
+      }/* 
+      const data1 = {
+        center_id: 1,
+        created_by: emp_id,
+        modified_by: emp_id,
+        attendance_by: emp_id,
+        classes:totalarray
+      }; */
+
+    const handleSubmit1 = async (e) => {
+        // handleSubmit(onSubmit);
+        
+        // e.preventDefault();
+       if (center_id === 0) {
+            var url = "http://192.168.1.78:8083/createcenter";
+            var method = "POST";
+           
+            var body = { center_name: formValues.center_name,
+                                bhag_id: formValues.bhag_id,
+                                about_center: formValues.about_center,
+                                project_id:formValues.project_id,
+                                started_on: formValues.started_on,
+                                is_active: "",
+                                created_on: Date.now(),
+                                created_by: 1,
+                                modified_on: Date.now(),
+                                modified_by: 1,
+                                classes:totalarray   
+                            };
+         body.then((res)=>{
+      console.log("Response",res)
+            })
+         .catch((err)=>{
+            console.log(err,"Error")
+         })
+          
+            if(center_id !== 0){
+                url = "http://192.168.1.78:8083/updatecenter";
+                method = "PUT";
+                body.push({center_id: center_id});
+            }
+            try {
+                let res = await fetch(url,
+                    {
+                        method: method,
+                        headers: {
+                            Accept: 'application/json',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(body),
+                    });
+                // console.log(res);
+                let resJson = await res.json();
+                console.log("Response", resJson);
+                if (formValues != null) {
+
+                    // window.alert("Your Data has been Submitted Succesfully");
+                    // window.location.reload();
+                    toast.success("Task Saved", {
+                        position: "bottom-center",
+                      });
+                }
+            } catch (error) {
+                console.log(error, "Error");
+                toast.error(error.response.data.message);
+            }
+        }
+        
+    };
+    
+    return (
+        <>
+            <Box
+                sx={{
+                    pb: 10,
+                    py: { xl: 8 },
+                    display: 'flex',
+                    flex: 1,
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
+                <Card
+                    sx={{
+                        maxWidth: 1200,
+                        width: '100%',
+                        textAlign: 'center',
+                        padding: { xs: 4, lg: 8, xl: '39px 49px' },
+                        overflow: 'hidden',
+                        boxShadow:'0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                    }}
+                >
+                    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', mb: 5 }}>
+                            <center>
+                                <Typography variant="h1" gutterBottom color="#B84081" >
+                                    {center_id === 0 && ("ADD CENTER")}
+
+                                    {center_id !== 0 && ("EDIT CENTER")}
+                                </Typography>
+                            </center>
+                            <Formik>
+                                <Form style={{ textAlign: 'left' }} noValidate autoComplete='off' onSubmit={handleSubmit1}>
+
+                                    <Box sx={{ mb: { xs: 4, xl: 5 } }}>
+                                        <FormControl fullWidth
+                                        //  error={Boolean(errors.project_id)}
+                                        >
+                                            
+                                            <InputLabel id="demo-simple-select-label">Center Type*</InputLabel>
+                                           
+                                            <Select
+                                                labelId="demo-simple-select-label"
+                                                id="demo-simple-select"
+                                                name="project_id"
+                                                value={formValues.project_id}
+                                                onChange={handleChange}
+                                                label="Center Type1"
+                                                sx={{
+                                                    width: '100%',
+                                                    '& .MuiInputBase-input': {
+                                                        fontSize: 14,
+                                                    },
+                                                }}
+                                            >
+                                                <MenuItem value={1}>Rural</MenuItem>
+                                                <MenuItem value={2}>Urban</MenuItem>
+                                                <MenuItem value={3}>Muncipal</MenuItem>
+
+                                            </Select>
+                                   
+                                  
+                                         
+                                        </FormControl>
+
+                                    </Box>
+                                    <Box sx={{ mb: { xs: 4, xl: 5 } }}>
+                                        <TextField
+                                            label="Center Name*"
+                                            value={formValues.center_name}
+                                            onChange={handleChange}
+                                            name='center_name'
+                                            type="text"
+                                            id="name"
+                                            variant='outlined'
+                                           
+                                            sx={{
+                                                width: '100%',
+                                                '& .MuiInputBase-input': {
+                                                    fontSize: 14,
+                                                },
+                                            }}
+                                        />
+
+                                    </Box>
+                                    <Box sx={{ mb: { xs: 4, xl: 5 } }}>
+                                        <TextField
+                                            id="outlined-multiline-flexible"
+                                            label="About Center*"
+                                            sx={{
+                                                width: '100%',
+                                                '& .MuiInputBase-input': {
+                                                    fontSize: 14,
+                                                }
+                                            }}
+                                            multiline
+                                            maxRows={2}
+                                            name="about_center"
+                                           
+
+                                            value={formValues.about_center}
+                                            onChange={handleChange}
+                                            // className={formErrors.nirvahika && ('mandatory-error')}
+                                        />
+
+                                    </Box>
+                                    <Box sx={{ mb: { xs: 4, xl: 5 } }}>
+                                  {/*   <MuiPickersUtilsProvider utils={DateFnsUtils}>
+            
+            <Controller
+              render={(props) => (
+                <KeyboardDatePicker
+                  disableToolbar
+                  variant="inline"
+                  format="MM/dd/yyyy"
+                  margin="normal"
+                  label="Date of Admission"
+                  value={props.value}
+                  onChange={props.onChange}
+                  fullWidth
+                  error={Boolean(errors.date_of_admission)}
+                  helperText={errors.date_of_admission?.message}
+                />
+              )}
+              name="date_of_admission"
+              defaultValue={null}
+              control={control}
+              rules={{
+                required: "Date of Admission is required.",
+              }}
+            />
+ </MuiPickersUtilsProvider> */}
+
+
+                                
+                                        <TextField
+                                            /*   label="Start Date" */                                           
+                                            className="input_height wd-130"
+                                           /*  readOnly={c.Editable ? false : true}
+                                            onChange={(e) => {this.handleChangeGeneralLedgerList(e,item.data, i,j);}}
+                                            value={formValues.started_on.moment(item.data[j]).format("DD/MM/YYYY")}           */                               
+                                            value={formValues.started_on}
+                                            onChange={handleChange}
+                                            variant='outlined'
+                                            type="Date"
+                                            // error={Boolean(errors.started_on)}
+                                            // helperText={errors.started_on?.message}
+                                            sx={{
+                                                width: '100%',
+                                                '& .MuiInputBase-input': {
+                                                    fontSize: 14,
+                                                },
+                                            }}
+                                        />
+                                   
+                                     
+                                    
+                                       
+                                    </Box>
+
+                                   
+
+                                    <Box sx={{ mb: { xs: 4, xl: 5 } }}>
+                                   
+                                        <FormControl fullWidth>
+                                      
+                                            <InputLabel id="demo-simple-select-label">Bhag*</InputLabel>
+                                          
+                                             
+                                            <Select
+                                                labelId="demo-simple-select-label"
+                                                id="demo-simple-select"
+                                                value={formValues.bhag_id}
+                                                name="bhag_id"
+                                                onChange={handleChange}
+                                                lbel="Bhag"
+                                               
+                                                sx={{
+                                                    width: '100%',
+                                                    '& .MuiInputBase-input': {
+                                                        fontSize: 14,
+                                                    },
+                                                }}
+                                            >
+                                                <MenuItem value={1}>BhagyaNagar</MenuItem>
+                                                <MenuItem value={2}>Khammam</MenuItem>
+                                                <MenuItem value={3}>Karimnagar</MenuItem>
+                                                <MenuItem value={4}>Mahabhubnagar</MenuItem>
+                                            </Select>
+                                          
+                                           
+                                           
+                                                                                 
+                                        </FormControl>                                   
+                                    </Box>
+
+                                    
+                                    <center>
+                                        <h4 color="#B84081" > Classes Strength*</h4>
+                                    </center>
+                                     
+                                     <Box sx={{ mb: { xs: 4, xl: 5} }}>
+                                        {classValues.map((item,index) =>(
+                                        <TextField
+                                          label={item.class_name}
+                                        //   value={classValues.class_name}
+                                            name='class_name'
+                                            onChange={(e) =>
+                                                onChangeMenu(e, item.class_id,'100')
+                                              }
+                                            key={item.class_id}
+                                            type="integer"
+                                            variant='outlined'
+                                           
+                                           
+                                            sx={{ mb: { xs: 4, xl: 5} ,
+                                                radious: "100px",
+                                                height: "100%",
+                                                width: '100%',
+                                                '& .MuiInputBase-input': {
+                                                    fontSize: 19,
+                                                },
+                                            }}
+                                       />  
+                                       
+                                         ))}      
+                                       </Box>
+                                    <div>
+                                        <center>
+                                            <Button
+                                                fullWidth
+                                                variant='contained'
+                                                type="submit"
+                                                value={center_id}
+                                                size="large"
+                                                // onClick={handleSubmit(onSubmit)}
+                                                sx={{
+                                                    fontWeight: Fonts.REGULAR,
+                                                    fontSize: 16,
+                                                    bgcolor: '#B84081',
+                                                    textTransform: 'capitalize',
+                                                    padding: '4px 16px 8px',
+                                                }}>
+                                                Submit
+                                            </Button>
+                                            {/* <Toaster/> */}
+                                        </center>
+                                    </div>
+                                </Form>
+                            </Formik>
+                        </Box>
+                        <AppInfoView />
+                    </Box>
+                </Card>
+            </Box>
+        </>
+    );
+};
+export default Page2;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
